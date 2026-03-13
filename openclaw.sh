@@ -1552,23 +1552,6 @@ except Exception:
 	openclaw_api_manage_list() {
 		local config_file="${HOME}/.openclaw/openclaw.json"
 
-		while IFS=$'\t' read -r rec_type idx name base_url model_count latency_txt latency_level; do
-			case "$rec_type" in
-				MSG)
-					echo "$idx"
-					;;
-				ROW)
-					local latency_color="$gl_bai"
-					case "$latency_level" in
-						low)               latency_color="$gl_lv" ;;
-						medium)            latency_color="$gl_huang" ;;
-						high|unavailable)  latency_color="$gl_hong" ;;
-						unchecked)         latency_color="$gl_bai" ;;
-					esac
-
-					printf '%b\n' "[$idx] ${name} | API: ${base_url} | 模型数量: ${gl_huang}${model_count}${gl_bai} | 延迟/状态: ${latency_color}${latency_txt}${gl_bai}"
-					;;
-			esac
 		local _py_list; _py_list=$(mktemp /tmp/oc_list_XXXXXX.py)
 		cat > "$_py_list" << 'PYEOF'
 import json, sys, time, urllib.request
@@ -1638,6 +1621,24 @@ for idx, name in enumerate(sorted(providers.keys()), start=1):
     latency_text, latency_level = classify_latency(latency_raw)
     print('ROW\t' + '\t'.join([str(idx), str(name), str(base_url), str(model_count), str(latency_text), str(latency_level)]))
 PYEOF
+
+		while IFS=$'\t' read -r rec_type idx name base_url model_count latency_txt latency_level; do
+			case "$rec_type" in
+				MSG)
+					echo "$idx"
+					;;
+				ROW)
+					local latency_color="$gl_bai"
+					case "$latency_level" in
+						low)               latency_color="$gl_lv" ;;
+						medium)            latency_color="$gl_huang" ;;
+						high|unavailable)  latency_color="$gl_hong" ;;
+						unchecked)         latency_color="$gl_bai" ;;
+					esac
+
+					printf '%b\n' "[$idx] ${name} | API: ${base_url} | 模型数量: ${gl_huang}${model_count}${gl_bai} | 延迟/状态: ${latency_color}${latency_txt}${gl_bai}"
+					;;
+			esac
 		done < <(python3 "$_py_list" "$config_file")
 		rm -f "$_py_list"
 	}
