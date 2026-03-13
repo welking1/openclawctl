@@ -2,7 +2,7 @@
 
 OpenClaw / MoltBot 的管理脚本，把常用操作都包进了一个交互式菜单里，省得每次手打命令。
 
-支持 macOS（Intel / Apple Silicon）和主流 Linux 发行版。
+支持 macOS（Intel / Apple Silicon）、主流 Linux 发行版和 Windows 11。
 
 作者：Joey  
 YouTube：[@joeyblog](https://youtube.com/@joeyblog)  
@@ -15,12 +15,14 @@ Telegram 交流群：https://t.me/+ft-zI76oovgwNmRh
 
 - 一键安装全套（OpenClaw + CLIProxyAPI + OAuth + 自动配置）
 - OpenClaw 的启动、停止、更新、卸载
-- API 提供商管理，模型同步，模型切换
-- CLIProxyAPI 的完整管理（服务控制、账号登录、Key 管理）
-- 对接机器人（Telegram、飞书、钉钉等）
+- API 提供商管理，模型同步，延迟检测，模型切换
+- CLIProxyAPI 的完整管理（服务控制、账号登录、Key 管理、日志查看）
+- 对接机器人（Telegram、飞书、WhatsApp、Discord、Slack）
 - 插件和技能安装
-- 备份与还原
-- 健康检测
+- 备份与还原（记忆 / 项目）
+- 健康检测与修复
+- WebUI 访问与设备配对
+- 开机自启动管理
 
 ---
 
@@ -28,6 +30,7 @@ Telegram 交流群：https://t.me/+ft-zI76oovgwNmRh
 
 | 系统 | 支持情况 |
 |------|---------|
+| Windows 11 | 完整支持，PowerShell 5.1+，依赖通过 winget 自动安装 |
 | macOS Apple Silicon | 完整支持，依赖通过 Homebrew 自动安装 |
 | macOS Intel | 完整支持，依赖通过 Homebrew 自动安装 |
 | Ubuntu / Debian | 完整支持 |
@@ -41,6 +44,7 @@ Telegram 交流群：https://t.me/+ft-zI76oovgwNmRh
 
 所有依赖在首次运行时自动安装，无需手动操作：
 
+- Windows：通过 winget 自动安装 Node.js 和 Git
 - macOS：脚本会自动安装 Homebrew（如未安装），然后通过 brew 装其余依赖
 - Linux：通过系统包管理器（apt / dnf / yum / apk / pacman）自动安装
 - 依赖包括：Node.js、curl、git、nano、jq、python3、gum、fzf
@@ -48,6 +52,8 @@ Telegram 交流群：https://t.me/+ft-zI76oovgwNmRh
 ---
 
 ## 用法
+
+### macOS / Linux
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/byJoey/openclawctl/main/openclaw.sh)
@@ -63,6 +69,23 @@ chmod +x openclaw.sh
 ./openclaw.sh
 ```
 
+### Windows
+
+在 PowerShell 中运行：
+
+```powershell
+irm https://raw.githubusercontent.com/byJoey/openclawctl/main/openclaw.ps1 | iex
+```
+
+运行一次后，新开 PowerShell 窗口输入 `oc` 即可快速启动。
+
+或者下载到本地再运行：
+
+```powershell
+Invoke-WebRequest -Uri https://raw.githubusercontent.com/byJoey/openclawctl/main/openclaw.ps1 -OutFile openclaw.ps1
+.\openclaw.ps1
+```
+
 ---
 
 ## 小白模式
@@ -70,9 +93,9 @@ chmod +x openclaw.sh
 主菜单第一项，适合第一次安装。按顺序完成：
 
 1. 安装 Node.js 和构建工具
-2. `npm install -g openclaw`
+2. 安装 OpenClaw（Windows 使用官方安装脚本，macOS/Linux 用 npm）
 3. `openclaw onboard`（交互式向导）
-4. 安装 CLIProxyAPI（macOS 用 brew，Linux 用一键脚本）
+4. 安装 CLIProxyAPI（macOS 用 brew，Linux 用一键脚本，Windows 从 GitHub 下载二进制）
 5. OAuth 登录（支持 Claude / Gemini / OpenAI / Qwen / iFlow）
 6. 启动 CLIProxyAPI 服务
 7. 注册 CLIProxyAPI 为 API 提供商
@@ -85,7 +108,7 @@ chmod +x openclaw.sh
 
 ## OAuth 登录说明
 
-### macOS
+### Windows / macOS
 
 有本地浏览器，直接运行登录命令，浏览器自动打开，授权后回调自动处理，全程无需手动操作。
 
@@ -111,17 +134,18 @@ Qwen 用的是 device flow，只需要在浏览器里输入授权码，两端都
 
 | 操作 | 说明 |
 |------|------|
-| 启动 / 停止 / 重启 | macOS 用 brew services，Linux 优先 systemd，失败了用 nohup |
-| 查看日志 | macOS 读 brew 日志，Linux 用 journalctl 或 /tmp/cliproxyapi.log |
+| 启动 / 停止 / 重启 | Windows 用后台进程，macOS 用 brew services，Linux 优先 systemd |
+| 查看日志 | Windows 读日志文件，macOS 读 brew 日志，Linux 用 journalctl |
 | 账号授权登录 | 五个提供商都支持 |
 | 生成并添加 API Key | 生成 sk- 格式的 key，自动写入 config.yaml |
-| 查看 API Keys | 列出当前配置的 key |
-| 编辑配置文件 | 打开 nano |
-| 更新 | macOS 用 brew upgrade，Linux 拉最新版本 |
+| 查看 API Keys | 列出当前配置的全部 key |
+| 编辑配置文件 | Windows 用 notepad，macOS/Linux 用 nano |
+| 更新 | Windows 重新下载二进制，macOS 用 brew upgrade，Linux 拉最新版本 |
 | 卸载 | 停服务，删目录 |
 
 配置文件位置：
 
+- Windows：`%USERPROFILE%\.cli-proxy-api\config.yaml`
 - macOS：`~/.cli-proxy-api/config.yaml`
 - Linux：`~/cliproxyapi/config.yaml`
 
@@ -137,10 +161,13 @@ Qwen 用的是 device flow，只需要在浏览器里输入授权码，两端都
 
 **macOS 首次运行需要网络。** 会自动安装 Homebrew，需要能访问 GitHub。
 
+**Windows 需要管理员权限。** 部分操作（如注册开机自启动任务）需要以管理员身份运行 PowerShell。
+
 ---
 
 ## 文件说明
 
 ```
-openclaw.sh              主脚本，直接运行这个
+openclaw.sh              macOS / Linux 主脚本
+openclaw.ps1             Windows 主脚本
 ```
